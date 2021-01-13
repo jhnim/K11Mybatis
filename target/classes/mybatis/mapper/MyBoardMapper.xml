@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--  
+	https://mybatis.org/mybatis-3/getting-started.html
+	
+	
+	매퍼의 namespace속성
+		: 해당 매퍼파일을 호출하기 위해 정의한 인터페이스의 패키지를 포함한 풀경로를 기술한다. 
+		해당 인터페이스는 컨트롤러와 Mapper(DAO)사이에서 중재자 역할을 하는 서비스 객체로 사용된다.
+		
+		
+	id속성
+		: 실제 호출되는 함수명과 동일한 이름으로 기술한다.
+	resultType
+		: 쿼리 실행 후 반환되는 값의 타입을 명시한다.
+		이땐 패키지명을 포함한 풀경로를 기술해야한다.
+	parameterType
+		: 쿼리문에서 사용할 파라미터를 저장한 DTO 혹은 VO객체의 타입을 명시한다.
+		패키지명을 포함한 풀경로를 기술해야 한다.
+-->
+<!--  
+	select
+		: select문에 해당하는 결과를 반환한다.
+		아래와 같이 int인 경우는 정수값을 DTO객체인 경우에는 해당 레코드를 
+		저장한 List계열의 컬렉션으로 반환된다.
+	
+	insert 
+		: 입력성공시 1, 실패시 0을 반환한다. 만약 insert가 여러번 되더라도 성공시에는 1을 반환한다.
+	
+	update/delete
+		: 수정, 삭제에 성공한 행의 갯수가 반환된다. 조건에 따라 여러개의 레코드가 
+		한꺼번에 적용될 수 있으므로 0, 1이 아닌 더 큰 값이 반환될 수 있다.
+		실패의 경우 0이 반환된다.
+-->
+ <mapper namespace="mybatis.MybatisDAOImpl" >
+ 
+ <!-- ##### 1차버전에서 사용 ##### -->
+  	<!--  
+ 		listPage(int s, int e) 이와같이 추상메소드를 통해
+ 		해당 엘리먼트가 호출되면 매개변수 s, e는 순서대로 param1, param2로 전달되어
+ 		인파라미터 설정이 완료된다.
+ 	-->
+<!--  
+   	<select id="getTotalCount" resultType="int">
+ 		SELECT COUNT(*) from myboard
+ 	</select>
+ 	<select id="listPage" resultType="mybatis.MyBoardDTO">
+ 		SELECT * FROM (
+ 			SELECT Tb.*, rownum rNum FROM (
+ 				SELECT * FROM myboard 
+ 				ORDER BY idx DESC
+ 			) Tb
+ 		)
+ 		WHERE rNum BETWEEN #{param1} AND #{param2}
+ 	</select>
+-->
+
+ <!-- ##### 2차버전에서 사용 ##### -->
+ 	<!--  
+ 		검색어처리: 검색어가 있는 경우 동적으로 쿼리문을 변경해야 하므로 동적쿼리를 위해 if문을 사용한다.
+ 		JSTL태그와 사용법은 동일하다.
+ 	-->
+<!-- 
+ 	<select id="getTotalCount" resultType="int" parameterType="mybatis.ParameterDTO">
+ 		SELECT COUNT(*) from myboard
+ 		<if test="searchTxt!=null and !searchTxt.equals('')">
+ 			WHERE ${searchField} like '%'||#{searchTxt}||'%'
+ 		</if>
+ 	</select> 
+ 	<select id="listPage" resultType="mybatis.MyBoardDTO" parameterType="mybatis.ParameterDTO">
+ 		SELECT * FROM (
+ 			SELECT Tb.*, rownum rNum FROM (
+ 				SELECT * FROM myboard 
+ 				<if test="searchTxt!=null and !searchTxt.equals('')">
+ 					WHERE ${searchField} like '%'||#{searchTxt}||'%'
+ 				</if>
+ 				ORDER BY idx DESC
+ 			) Tb
+ 		)
+ 		WHERE rNum<![CDATA[>=]]>#{start} AND rNum<![CDATA[<=]]>#{end}
+ 		
+ 	</select>
+--> 
+
+<!-- 3차버전 -->	
+ 	<!--  
+ 		반복을 통해 동적쿼리를 만들때는 foreach문을 사용한다.
+ 		collection : 반복에 사용할 컬렉션 객체
+ 		item : 반복시 사용할 변수
+ 		open : 쿼리문의 시작부분
+ 		end : 쿼리문의 끝부분
+ 		separator : 반복될때 사용할 구분자. 
+ 			and, or, 콤마 등 여러가지 형태의 문자를 사용할 수 있다.
+ 	-->
+ 	<select id="getTotalCount" resultType="int" parameterType="mybatis.ParameterDTO">
+ 		SELECT COUNT(*) from myboard
+ 		<if test="searchTxt!=null">
+ 			WHERE 
+ 			<foreach collection="searchTxt" item="str" open="(" close=")" separator="or">
+	 			${searchField} like '%'||#{str}||'%'
+ 			</foreach>
+ 		</if>
+ 	</select> 
+ 	<select id="listPage" resultType="mybatis.MyBoardDTO" parameterType="mybatis.ParameterDTO">
+ 		SELECT * FROM (
+ 			SELECT Tb.*, rownum rNum FROM (
+ 				SELECT * FROM myboard 
+ 				<if test="searchTxt!=null">
+ 					WHERE 
+ 					<foreach collection="searchTxt" item="str" open="(" close=")" separator="or">
+ 						${searchField} like '%'||#{str}||'%'
+ 					</foreach>
+ 				</if>
+ 				ORDER BY idx DESC
+ 			) Tb
+ 		)
+		WHERE rNum BETWEEN #{start} AND #{end}
+ 		
+ 	</select>
+	<!--WHERE rNum<![CDATA[>=]]>#{start} AND rNum<![CDATA[<=]]>#{end} -->
+	<!--WHERE rNum BETWEEN #{start} AND #{end} -->
+	<!--  
+		CDATA : Unparsed Character Data. 파싱하지 않는 문자데이터를 의미하는 용어로
+			 Mapper에서는 꺽쇄로 시작하는 모든 문자를 엘리먼트로 판단하기 때문에 쿼리문 사이에 
+			 비교연산자를 사용할때는 반드시 위와같이 처리해야한다.
+	-->
+ 
+ 	<!--  
+ 		@Param 어노테이션에서 지정한 명칭을 사용하여 인파라미터를 처리하고 있다.
+ 	-->
+ 	<insert id="write">
+ 		INSERT INTO myboard (idx, id, name, contents)
+ 		VALUES
+ 		(myboard_seq.nextval, #{_id}, #{_name}, #{_contents})
+ 	</insert>
+ 	
+ 	<!--  
+ 		매개변수로 전달된 DTO객체의 멤버변수만 명시하면 내부적으로 getter()가 호출되어 값을 얻어올 수 있다.
+ 		(EL과 동일하다)
+ 	-->
+ 	<!-- 게시물 조회하기 -->
+ 	<select id="view" resultType="mybatis.MyBoardDTO" parameterType="mybatis.ParameterDTO">
+ 		SELECT * FROM myboard WHERE idx=#{board_idx} AND id=#{user_id}
+ 	</select>
+ 	
+ 	<!-- 게시물 수정하기 -->
+ 	<update id="modify" parameterType="mybatis.MyBoardDTO">
+ 		UPDATE myboard SET name=#{name}, contents=#{contents}
+ 			WHERE idx=#{idx} AND id=#{id}
+ 	</update>
+ 	
+ 	<!-- 게시물 삭제하기 -->
+ 	<delete id="delete">
+ 		DELETE FROM myboard WHERE idx=#{param1} AND id=#{param2}
+ 	</delete>
+ </mapper>
