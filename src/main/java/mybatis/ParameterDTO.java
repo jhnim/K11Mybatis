@@ -46,15 +46,15 @@ public class ParameterDTO {
 	public void setSearchField(String searchField) {
 		this.searchField = searchField;
 	}
-	//2차버전에서 사용함
 	/*
+	//2차버전에서 사용함
 	public String getSearchTxt() {
 		return searchTxt;
 	}
 	public void setSearchTxt(String searchTxt) {
 		this.searchTxt = searchTxt;
 	}
-	 */
+	*/
 	//3차버전에서 사용함
 	public ArrayList<String> getSearchTxt() {
 		return searchTxt;
@@ -62,4 +62,5 @@ public class ParameterDTO {
 	public void setSearchTxt(ArrayList<String> searchTxt) {
 		this.searchTxt = searchTxt;
 	}
+	
 }
